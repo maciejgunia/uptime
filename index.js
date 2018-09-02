@@ -1,8 +1,32 @@
 const http = require("http");
+const https = require("https");
 const url = require("url");
 const { StringDecoder } = require("string_decoder");
+const config = require("./config");
+const fs = require("fs");
 
 const server = http.createServer((req, res) => {
+    unifiedServer(req, res);
+});
+
+const options = {
+    key: fs.readFileSync("./https/key.pem"),
+    cert: fs.readFileSync("./https/cert.pem")
+};
+
+const secureServer = https.createServer(options, (req, res) => {
+    unifiedServer(req, res);
+});
+
+server.listen(config.httpPort, () => {
+    console.log(`started a ${config.envName} server on a port ${config.httpPort}`);
+});
+
+secureServer.listen(config.httpsPort, () => {
+    console.log(`started a ${config.envName} server on a port ${config.httpsPort}`);
+});
+
+const unifiedServer = (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const path = parsedUrl.pathname;
     const trimmedPath = path.replace(/^\/+|\/+$/g, "");
@@ -40,21 +64,19 @@ const server = http.createServer((req, res) => {
             payload = typeof(payload) === "object" ? payload : {};
             
             payloadString = JSON.stringify(payload);
+
+            res.setHeader("Content-Type", "application/json");
             
             res.writeHead(statusCode);
             res.end(payloadString);
         });        
     });
-});
-
-server.listen(3000, () => {
-    
-});
+};
 
 const handlers = {};
 
-handlers.sample = (data, callback) => {
-    callback(406, {name: "sample handler"});
+handlers.ping = (data, callback) => {
+    callback(200);
 };
 
 handlers.notFound = (data, callback) => {
@@ -62,5 +84,5 @@ handlers.notFound = (data, callback) => {
 };
 
 const router = {
-    "sample": handlers.sample
+    "ping": handlers.ping
 };
