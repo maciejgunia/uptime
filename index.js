@@ -4,6 +4,8 @@ const url = require("url");
 const { StringDecoder } = require("string_decoder");
 const config = require("./config");
 const fs = require("fs");
+const handlers = require("./lib/handlers");
+const helpers = require("./lib/helpers");
 
 const server = http.createServer((req, res) => {
     unifiedServer(req, res);
@@ -19,10 +21,12 @@ const secureServer = https.createServer(options, (req, res) => {
 });
 
 server.listen(config.httpPort, () => {
+    // eslint-disable-next-line no-console
     console.log(`started a ${config.envName} server on a port ${config.httpPort}`);
 });
 
 secureServer.listen(config.httpsPort, () => {
+    // eslint-disable-next-line no-console
     console.log(`started a ${config.envName} server on a port ${config.httpsPort}`);
 });
 
@@ -54,7 +58,7 @@ const unifiedServer = (req, res) => {
             query: query,
             method: method,
             headers: headers,
-            payload : buffer
+            payload : helpers.parseJSON(buffer)
         };
 
         chosenHandler(data, (statusCode, payload) => {
@@ -73,16 +77,7 @@ const unifiedServer = (req, res) => {
     });
 };
 
-const handlers = {};
-
-handlers.ping = (data, callback) => {
-    callback(200);
-};
-
-handlers.notFound = (data, callback) => {
-    callback(404);
-};
-
 const router = {
-    "ping": handlers.ping
+    "ping": handlers.ping,
+    "users": handlers.users
 };
